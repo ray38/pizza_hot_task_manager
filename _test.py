@@ -38,6 +38,15 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                 self.request.sendall(bytes(str({'order_ID': ID, 'store_list': choices, 'type': 'query successful'}), "utf-8"))
             else:
                 self.request.sendall(bytes(str({'order_ID': ID, 'store_list': choices, 'type': 'query failed'}), "utf-8"))
+        if command['type'] == 'comfirm':
+            print('query start')           
+            ID, status, message, time = self.server.Agent.comfirm_w_store(command['order_ID'], command['store_ID'])
+            if status == 2:
+                self.request.sendall(bytes(str({'order_ID': ID,'type': 'order taken', 'message': message, 'updated time': time}), "utf-8"))
+            elif status == 5:
+                self.request.sendall(bytes(str({'order_ID': ID, 'type': 'new query', 'message' : 'original query expired, new choices given','updated choice': time}), "utf-8"))
+            elif status == -2:
+                self.request.sendall(bytes(str({'order_ID': ID, 'type': 'query update failed', message : 'original query expired, new update failed'}), "utf-8"))
  
 if __name__ == "__main__":
     HOST, PORT = "localhost", 9999

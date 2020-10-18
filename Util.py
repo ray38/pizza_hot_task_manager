@@ -99,8 +99,10 @@ class Agent:
         choices = self.query(new_order)
         if choices != -1:
             print('successfully queried order')
-            new_order.add_store_list(choices)
+            new_order.add_store_list(dict(choices))
             self.pending_request[new_order.ID] = new_order
+            if len(choices) > 3:
+                return new_order.ID, new_order.status, dict(choices[:3])
             return new_order.ID, new_order.status, choices
         else:
             print('No available choices')
@@ -118,29 +120,30 @@ class Agent:
                     travel_time += store.waiting_time + store.speed
                     if dist <= order.dist_limit and travel_time <= order.time_limit:
                         choices[store.ID] = {'distance':dist, 'time':travel_time}
-        print(choices)
         if len(choices) > 1:
             choices = sorted(choices.items(), key = lambda x : x[1]['time']) 
-            if len(choices) > 3:
-                return dict(choices[:3])
-            return dict(choices)
+            return choices
         elif len(choices) == 1:
             return choices
         return -1
-    def comfirm_w_store(self, order_ID, choice_ID):
+    def comfirm_w_store(self, order_ID, store_ID):
         order = self.pending_request[order_ID]
-        (store, (dist, time)) = order.store_list[choice_ID]
+        store_dict= order.store_list[store_ID]
+        #dist = store_dict['distance']
+        time = store_dict['time']
         updated_choices = self.query(order)
         if updated_choices != -1:
-            if dict(updated_choices)[store][1] <= time*1.2:
-                message = self.store_list[store].take_order(order_ID, order.order)
+            if dict(updated_choices)[store_ID]['time'] <= time*1.2:
+                message = self.store_list[store_ID].take_order(order_ID, order.order)
                 if message[1] == 2:
                     order.order_taken()
-                    self.in_process.append(order_ID, order)
-                    return order.ID, order.status, message
+                    self.in_process.append(order_ID)
+                    return order.ID, order.status, 'order processed by store, time updated', dict(updated_choices)[store_ID]['time']
             else:
                 order.query_expired() 
-                return order.ID, order.status,message 
+                if len(updated_choices) > 3:
+                    return order.ID, order.status, 'query expired', dict(updated_choices[:3])
+                return  order.ID, order.status, 'query expired', dict(updated_choices)
         else:
             order.update_failed()
-            return order.ID, order.status, updated_choices
+            return order.ID, order.status, 'update failed', -1000
