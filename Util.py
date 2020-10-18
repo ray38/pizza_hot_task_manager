@@ -117,10 +117,13 @@ class Agent:
                 if dist <= order.dist_limit and travel_time <= order.time_limit:
                     travel_time += store.waiting_time + store.speed
                     if dist <= order.dist_limit and travel_time <= order.time_limit:
-                        choices[store.ID] = (dist, travel_time)
+                        choices[store.ID] = {'distance':dist, 'time':travel_time}
+        print(choices)
         if len(choices) > 1:
-            choices = sorted(choices.items(), key = lambda x : x[1])     
-            return choices
+            choices = sorted(choices.items(), key = lambda x : x[1]['time']) 
+            if len(choices) > 3:
+                return dict(choices[:3])
+            return dict(choices)
         elif len(choices) == 1:
             return choices
         return -1

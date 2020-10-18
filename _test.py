@@ -31,7 +31,14 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             ID, message = self.server.Agent.close_store(command['store_ID'])
             print(ID)
             self.request.sendall(bytes(str({'store_ID': ID, 'type': message}), "utf-8"))
-            
+        if command['type'] == 'query':
+            print('query start')           
+            ID, status, choices = self.server.Agent.new_query(command['Order'],(command['Location']['startX'],command['Location']['startY']),(command['Location']['endX'],command['Location']['endY']),  command['Constraints'])
+            if status == 1:
+                self.request.sendall(bytes(str({'order_ID': ID, 'store_list': choices, 'type': 'query successful'}), "utf-8"))
+            else:
+                self.request.sendall(bytes(str({'order_ID': ID, 'store_list': choices, 'type': 'query failed'}), "utf-8"))
+ 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 9999
     Agent1 = Agent()
